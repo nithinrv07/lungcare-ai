@@ -1,0 +1,6 @@
+{
+  "name": "LungCare AI",
+  "description": "Research platform analyzing clinical patient data and chest imaging using dual machine-learning models with explainability.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

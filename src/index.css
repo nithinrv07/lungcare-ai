@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  --bg-page: #F7F5EF;
+  --bg-card: #FFFFFF;
+  --forest-green: #245C45;
+  --deep-green: #183D30;
+  --soft-sage: #E7EFE5;
+  --border-subtle: #DCE3D8;
+  --text-main: #24352B;
+  --text-secondary: #607066;
+  --amber-status: #946200;
+  --error-red: #B33D3D;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom utility colors */
+.bg-cream {
+  background-color: #F7F5EF;
+}
+.bg-sage {
+  background-color: #E7EFE5;
+}
+.bg-forest {
+  background-color: #245C45;
+}
+.bg-deep-green {
+  background-color: #183D30;
+}
+.text-forest {
+  color: #245C45;
+}
+.text-deep-green {
+  color: #183D30;
+}
+.text-secondary {
+  color: #607066;
+}
+.text-main {
+  color: #24352B;
+}
+.border-subtle {
+  border-color: #DCE3D8;
+}
+.text-amber-status {
+  color: #946200;
+}
+.text-error-red {
+  color: #B33D3D;
+}
+
