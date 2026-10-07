@@ -1,20 +1,194 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# LungCare AI
 
-# Run and deploy your AI Studio app
+A research prototype for exploring lung-related classification with two independent machine-learning models: a Random Forest for structured records and EfficientNetB0 for exported CT images.
 
-This contains everything you need to run your app locally.
+The React interface includes an overview, assessment workflow, results, history and review screens. The model integration adds a Python inference service and a real assessment form.
 
-View your app in AI Studio: https://ai.studio/apps/cf88b65f-bdf8-4868-ab7c-e06256569004
+> Educational research prototype. Model outputs are dataset classifications, not a medical diagnosis or calibrated patient cancer probabilities.
 
-## Run Locally
+## Current status
 
-**Prerequisites:**  Node.js
+The integration is being developed in [pull request #1](https://github.com/nithinrv07/lungcare-ai/pull/1) on `codex/connect-trained-models`.
 
+| Capability | Status |
+| --- | --- |
+| Frontend type check and production build | Passed during integration |
+| Backend validation and output-contract tests | Five tests passed |
+| Random Forest artifact | Loaded and smoke-tested locally; provision separately |
+| EfficientNetB0 inference code | Implemented; actual checkpoint still required for testing |
+| Structured feature encoding | Original training CSV or encoding guide still required |
+| Dashboard, history and review records | Demonstration data |
+| Live assessment results | Shown in the assessment screen; not persisted |
+| Production deployment | Not configured |
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Models and inputs
+
+| Branch | Model | Input | Output |
+| --- | --- | --- | --- |
+| Structured | Random Forest, 100 trees | 23 numeric features in their original training encoding | High, Low or Medium |
+| Image | EfficientNetB0 | Single PNG/JPEG CT export | Adenocarcinoma, large cell carcinoma, normal or squamous cell carcinoma |
+
+The two outputs are displayed independently. There is no averaged or fused risk score.
+
+The live structured form uses the exact training column names. The original demo questionnaire's pack-years, symptom durations and booleans must not be substituted for encoded training values. Confirm the original encodings before interpreting predictions.
+
+Image preprocessing converts to RGB and resizes to 224 × 224 with bilinear interpolation. Pixels remain in the 0–255 range because the trained EfficientNet model is expected to include its preprocessing. DICOM volumes and chest X-rays are not supported.
+
+## Run locally
+
+Use a current Node.js version supported by Vite 8, npm, and Python 3.11. Run commands from the repository root.
+
+### 1. Get the integration branch
+
+```sh
+git clone https://github.com/nithinrv07/lungcare-ai.git
+cd lungcare-ai
+git checkout codex/connect-trained-models
+npm ci
+```
+
+### 2. Create the Python environment
+
+```sh
+python -m venv backend/.venv
+```
+
+Activate it on Windows PowerShell:
+
+```powershell
+backend\.venv\Scripts\Activate.ps1
+```
+
+Or on macOS/Linux:
+
+```sh
+source backend/.venv/bin/activate
+```
+
+Install the backend dependencies:
+
+```sh
+pip install -r backend/requirements.txt
+```
+
+### 3. Provide the trained artifacts
+
+Place these trusted files in `backend/models/`:
+
+- `lung_cancer_model_deduplicated.pkl`
+- `selected_image_model.keras`
+- `metadata.json`
+
+Model files are ignored by Git. The Random Forest requires scikit-learn 1.6.1, pinned in the backend requirements. Only load pickle artifacts you trust.
+
+The image metadata must contain the verified training class order:
+
+```json
+{
+  "class_names": [
+    "adenocarcinoma",
+    "large.cell.carcinoma",
+    "normal",
+    "squamous.cell.carcinoma"
+  ]
+}
+```
+
+Verify this order against the original training export before use. The repository-root `metadata.json` is AI Studio application metadata; it is not the image-model metadata.
+
+You can set `MODEL_DIR` to use a different artifact directory. Restart the backend after adding or replacing files.
+
+### 4. Start both services
+
+With the Python environment active:
+
+```sh
+python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+```
+
+In a second terminal:
+
+```sh
+npm run dev
+```
+
+Open **http://localhost:3000** and choose **New Assessment**. Vite forwards `/api` requests to the backend at port 8000.
+
+The live model flow does not require a Gemini API key.
+
+## Using an assessment
+
+1. Choose both models, structured data only, or CT image only.
+2. For structured inference, enter all 23 original encoded feature values and confirm their encoding.
+3. For image inference, select a PNG/JPEG CT export no larger than 10 MB.
+4. Submit and inspect the separate output panels.
+
+The backend reports missing or incompatible artifacts explicitly. It never substitutes simulated scores when inference is unavailable. Live results include ordered class scores and an artifact identifier. SHAP values, Grad-CAM overlays and clinical explanations are not generated by this integration.
+
+The existing overview, history, review and demo result screens remain demonstration features. Live requests are not added to those records and are not saved across navigation or refresh.
+
+## API
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/api/health` | Availability, artifact identifier and loading error for each model |
+| GET | `/api/schema` | Exact structured feature names and image class order |
+| POST | `/api/predict` | Independent predictions for the requested inputs |
+
+Prediction requests use multipart form data:
+
+- `mode`: `both`, `patient_only` or `image_only`
+- `features`: JSON object containing exactly the 23 named numeric features, required for the structured branch
+- `image`: PNG/JPEG file, required for the image branch
+
+Responses contain `structured` and `image` entries. Each branch reports `available`, `not_included`, `unavailable` or `failed`. Successful branches include the predicted class, per-class scores, model name and artifact identifier.
+
+Interactive API documentation: **http://127.0.0.1:8000/docs**.
+
+## Validation
+
+Frontend:
+
+```sh
+npm run lint
+npm run build
+```
+
+Backend, with the virtual environment active:
+
+```sh
+pip install pytest httpx
+python -m pytest backend/test_app.py -q
+```
+
+The five tests cover missing models, invalid structured values, invalid images, image preprocessing and independent output ordering. Mock-model tests verify the integration contract; they do not measure trained-model accuracy. Real image inference still needs testing with the actual checkpoint.
+
+## Project structure
+
+| Path | Purpose |
+| --- | --- |
+| `src/App.tsx` | Application navigation |
+| `src/components/LiveAssessmentView.tsx` | Real model input form and result panels |
+| `src/components/` | Dashboard and demonstration screens |
+| `src/data/sampleAssessments.ts` | Demonstration assessment records |
+| `src/types/assessment.ts` | Existing dashboard assessment types |
+| `backend/app.py` | Model loading, validation and inference API |
+| `backend/models/` | Locally provisioned model artifacts |
+| `backend/test_app.py` | Backend contract tests |
+| `vite.config.ts` | Frontend configuration and local API proxy |
+
+## Deployment and remaining work
+
+The Vite proxy applies during local development. A production deployment needs a Python backend and a same-origin reverse proxy for `/api`; hosting only the static frontend will not run the models.
+
+Before making the service publicly accessible, add authentication, upload rate limits and proxy request-body limits. The role selector in the demo interface is not backend access control.
+
+Remaining integration work:
+
+- Supply and verify the trained image checkpoint and its metadata.
+- Confirm structured input codes using the original CSV and preprocessing.
+- Compare actual image predictions between the training notebook and service.
+- Connect live results to history, review and export workflows if needed.
+- Validate model performance on appropriately independent data.
+
+See [backend setup details](backend/README.md) for the inference service.
