@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+backend/models/*
+!backend/models/.gitkeep
+backend/.venv/
+__pycache__/
+.pytest_cache/

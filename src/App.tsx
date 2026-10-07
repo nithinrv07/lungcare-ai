@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar, UserRole } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { OverviewView } from './components/OverviewView';
-import { NewAssessmentView } from './components/NewAssessmentView';
+import { LiveAssessmentView } from './components/LiveAssessmentView';
 import { ResultsView } from './components/ResultsView';
 import { HistoryView } from './components/HistoryView';
 import { PatientResourcesView } from './components/PatientResourcesView';
@@ -158,7 +158,7 @@ export default function App() {
           userRole={userRole}
           setUserRole={setUserRole}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
-          isDemoMode={isDemoMode}
+          isDemoMode={currentTab === 'new-assessment' ? false : isDemoMode}
           setIsDemoMode={setIsDemoMode}
         />
 
@@ -174,11 +174,8 @@ export default function App() {
           )}
 
           {currentTab === 'new-assessment' && (
-            <NewAssessmentView
-              onAssessmentCreated={handleAssessmentCreated}
-              onCancel={() => setCurrentTab('overview')}
-              lang={lang}
-            />
+            <LiveAssessmentView />
+
           )}
 
           {currentTab === 'results' && activeAssessment && (
